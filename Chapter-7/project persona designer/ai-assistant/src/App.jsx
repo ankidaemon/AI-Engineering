@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 const App = () => {
     // State to hold the chat messages
     const [messages, setMessages] = useState([
-        { sender: 'assistant', text: "Hello, how can I help you today? I'm ready to assist with any questions you have.", tone: 'friendly' },
+        { sender: 'assistant', text: "Hello, how can I help you today? I'm ready to assist with any questions you have.", tone: '' },
     ]);
     // State for the user's input
     const [userInput, setUserInput] = useState('');
@@ -13,47 +13,59 @@ const App = () => {
     // Ref for the chat window to enable auto-scrolling
     const chatWindowRef = useRef(null);
 
-    // Hardcoded responses for demonstration based on detected tone
-    const responses = {
-        friendly: "No problem at all! I'm happy to help. What else can I assist you with?",
-        professional: "I understand the situation. I will now process your request. Is there anything else I can do for you?",
-        empathetic: "I'm so sorry to hear that you're having trouble. I'm here to help resolve this for you. Could you please provide more details?",
-    };
-
     // Simulate an API call to a generative AI model
     const getAiResponse = async (userMessage) => {
         setIsLoading(true);
-        // Simulate network delay
-        await new Promise(resolve => setTimeout(resolve, 1500));
 
-        // Simple sentiment analysis based on keywords
-        let tone = 'friendly';
-        if (userMessage.toLowerCase().includes('frustrated') || userMessage.toLowerCase().includes('angry') || userMessage.toLowerCase().includes('disappointed')) {
-            tone = 'empathetic';
-        } else if (userMessage.toLowerCase().includes('issue') || userMessage.toLowerCase().includes('problem') || userMessage.toLowerCase().includes('request')) {
-            tone = 'professional';
+        const prompt = `
+        Analyze the following user message. 
+        Do the Sentiment Analysis and set in field 'tone'. 
+        Reply based on user's sentiment and be extra polite if user seems sad or angry or have negative sentiments.
+        Return ONLY JSON:
+        {
+        "response": "<assistant reply>",
+        "tone": "<user's tone>"
         }
 
-        // In a real application, you would use a real LLM here.
-        // For example:
-        // const prompt = `Analyze the following user message for sentiment and respond with an appropriate tone (e.g., empathetic, professional, friendly).
-        // User: "${userMessage}"
-        // Assistant:`;
-        // const payload = { contents: [{ role: "user", parts: [{ text: prompt }] }] };
-        // const apiKey = "";
-        // const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
-        // const response = await fetch(apiUrl, {
-        //     method: 'POST',
-        //     headers: { 'Content-Type': 'application/json' },
-        //     body: JSON.stringify(payload)
-        // });
-        // const result = await response.json();
-        // const aiText = result.candidates[0].content.parts[0].text;
+        User: "${userMessage}"
+        `;
 
-        const aiText = responses[tone];
+        const payload = {
+            model: "gpt-4.1-mini",
+            input: prompt
+        };
+
+        const apiKey = "sk-proj-WqrI1AE7g9hvYohnc0R2B"; //your API key goes here. Get yours https://platform.openai.com/settings/organization/api-keys
+        const apiUrl = "https://api.openai.com/v1/responses";
+
+        const response = await fetch(apiUrl, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${apiKey}`
+            },
+            body: JSON.stringify(payload)
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+            console.error(result);
+            setIsLoading(false);
+            return {
+                text: "Sorry, something went wrong.",
+                tone: "neutral"
+            };
+        }
+
+        // Parse structured JSON from model
+        const parsed = JSON.parse(result.output[0].content[0].text);
 
         setIsLoading(false);
-        return { text: aiText, tone };
+        return {
+            text: parsed.response,
+            tone: parsed.tone
+        };
     };
 
     // Handle sending a new message
@@ -85,6 +97,13 @@ const App = () => {
         friendly: "bg-emerald-100 text-emerald-800",
         professional: "bg-indigo-100 text-indigo-800",
         empathetic: "bg-rose-100 text-rose-800",
+        happy: "bg-yellow-100 text-yellow-800",
+        positive: "bg-green-100 text-green-800",
+        sad: "bg-blue-100 text-blue-800",
+        neutral: "bg-gray-100 text-gray-800",
+        angry: "bg-red-100 text-red-800",
+        negative: "bg-red-100 text-red-800",
+        '': "bg-emerald-100 text-emerald-800",
     };
 
     return (
@@ -100,9 +119,21 @@ const App = () => {
                 <div ref={chatWindowRef} className="flex-grow p-6 space-y-4 overflow-y-auto">
                     {messages.map((msg, index) => (
                         <div key={index} className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
-                            <div className={`p-4 rounded-3xl max-w-sm ${msg.sender === 'user' ? 'bg-blue-500 text-white rounded-br-none' : `${toneStyles[msg.tone]} rounded-bl-none`}`}>
-                                <p className="text-sm leading-relaxed">{msg.text}</p>
+                            <div className={`p-4 rounded-3xl max-w-sm ${msg.sender === 'user'
+                                ? 'bg-blue-500 text-white rounded-br-none'
+                                : `${toneStyles[msg.tone]} rounded-bl-none`
+                                }`}>
+                                <p className="text-sm leading-relaxed">
+                                    {msg.text}
+                                </p>
+
+                                {msg.sender === "assistant" && msg.tone && (
+                                    <p className="text-xs mt-2 opacity-70">
+                                        <strong>User Sentiment detected:</strong> {msg.tone}
+                                    </p>
+                                )}
                             </div>
+
                         </div>
                     ))}
                     {/* Loading indicator */}
@@ -133,8 +164,8 @@ const App = () => {
                         <button
                             type="submit"
                             className={`p-3 rounded-full text-white transition-all duration-200 shadow-md ${isLoading
-                                    ? 'bg-gray-400 cursor-not-allowed'
-                                    : 'bg-blue-600 hover:bg-blue-700 active:scale-95'
+                                ? 'bg-gray-400 cursor-not-allowed'
+                                : 'bg-blue-600 hover:bg-blue-700 active:scale-95'
                                 }`}
                             disabled={isLoading}
                         >
