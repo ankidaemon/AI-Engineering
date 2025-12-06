@@ -18,16 +18,16 @@ const App = () => {
         setIsLoading(true);
 
         const prompt = `
-        Analyze the following user message. 
+        You are a customer service agent. Analyze the customer's messages. 
         Do the Sentiment Analysis and set in field 'tone'. 
-        Reply based on user's sentiment and be extra polite if user seems sad or angry or have negative sentiments.
+        Reply based on customers's sentiment and be extra polite if customer seems sad or angry or have negative sentiments.
         Return ONLY JSON:
         {
         "response": "<assistant reply>",
-        "tone": "<user's tone>"
+        "tone": "<Customer's tone>"
         }
 
-        User: "${userMessage}"
+        Customer: "${userMessage}"
         `;
 
         const payload = {
