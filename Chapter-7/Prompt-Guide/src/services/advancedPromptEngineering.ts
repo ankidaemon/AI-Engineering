@@ -38,7 +38,7 @@ Persona: ${persona.tone} tone, ${persona.formality} formality
       messages: [{ role: 'user', content: fewShotPrompt }],
       temperature: 0.3,
     });
-    return completion.choices[0]?.message?.content;
+    return {"prompt":fewShotPrompt, "botResponse":completion.choices[0]?.message?.content};
   }
   return "Few-shot example response";
 }
@@ -77,7 +77,7 @@ Based on this reasoning, here's my response:
       messages: [{ role: 'user', content: cotPrompt }],
       temperature: 0.2,
     });
-    return completion.choices[0]?.message?.content;
+    return {"prompt":cotPrompt, "botResponse":completion.choices[0]?.message?.content};
   }
   return "Chain-of-thought reasoning response";
 }
@@ -108,7 +108,7 @@ Now provide your response following this reasoning:
       messages: [{ role: 'user', content: reActPrompt }],
       temperature: 0.3,
     });
-    return completion.choices[0]?.message?.content;
+    return {"prompt":reActPrompt, "botResponse":completion.choices[0]?.message?.content};
   }
   return "ReAct structured response";
 }
@@ -137,7 +137,7 @@ export async function selfConsistencyPrompting(customerQuery: string, persona: a
     );
 
     // Select the best response (in practice, you might use more sophisticated selection)
-    return selectBestResponse(responses, persona);
+    return {"prompt":prompts, "botResponse":selectBestResponse(responses, persona)};
   }
   return "Self-consistency selected response";
 }
@@ -167,7 +167,7 @@ Rate each criterion 1-5 and provide specific feedback for improvement.
       messages: [{ role: 'user', content: critiquePrompt }],
       temperature: 0.1,
     });
-    return completion.choices[0]?.message?.content;
+    return {"prompt":critiquePrompt, "botResponse":completion.choices[0]?.message?.content};
   }
   return "Self-critique evaluation";
 }
@@ -197,7 +197,7 @@ Now provide your response with this reflection in mind:
       messages: [{ role: 'user', content: reflectivePrompt }],
       temperature: 0.4,
     });
-    return completion.choices[0]?.message?.content;
+    return {"prompt":reflectivePrompt, "botResponse":completion.choices[0]?.message?.content};
   }
   return "Reflective response";
 }
@@ -246,7 +246,7 @@ Based on this analysis, I'll choose the most appropriate branch and provide my r
       messages: [{ role: 'user', content: totPrompt }],
       temperature: 0.3,
     });
-    return completion.choices[0]?.message?.content;
+    return {"prompt":totPrompt, "botResponse":completion.choices[0]?.message?.content};
   }
   return "Tree-of-thoughts analyzed response";
 }
@@ -254,7 +254,7 @@ Based on this analysis, I'll choose the most appropriate branch and provide my r
 // PROMPT ENGINEERING TECHNIQUE 8: Prompt Chaining
 // Purpose: Break complex tasks into sequential steps
 export async function promptChaining(customerQuery: string, context: any) {
-  if (!openai) return "Prompt chaining response";
+  if (!openai) return "Dear [Customer\'s Name],I sincerely apologize for the frustration you\'re experiencing, and I appreciate you reaching out to us. I understand that you would like to connect with a human agent for immediate assistance. Please allow me to help you with that right away. I\’m escalating your request to one of our customer service agents, who will be with you shortly to address your concerns directly. Thank you for your patience, and again, I apologize for any inconvenience you’ve faced. We’re here to help you.";
 
   // Step 1: Analyze the customer's request
   const step1 = await openai.chat.completions.create({
@@ -290,7 +290,7 @@ export async function promptChaining(customerQuery: string, context: any) {
     temperature: 0.3,
   });
 
-  return step3.choices[0]?.message?.content || 'Prompt chaining response';
+  return step3.choices[0]?.message?.content || 'Dear [Customer\'s Name],I sincerely apologize for the frustration you\'re experiencing, and I appreciate you reaching out to us. I understand that you would like to connect with a human agent for immediate assistance. Please allow me to help you with that right away. I\’m escalating your request to one of our customer service agents, who will be with you shortly to address your concerns directly. Thank you for your patience, and again, I apologize for any inconvenience you’ve faced. We’re here to help you.';
 }
 
 // Helper function for self-consistency
@@ -332,7 +332,7 @@ export async function demonstrateAllTechniques(customerQuery: string, context: a
   };
 
   // Demonstrate self-critique on one of the responses
-  const fewShotResponse = results.fewShot || "Sample response for critique";
+  const fewShotResponse = results.fewShot.botResponse || "Sample response for critique";
   results.selfCritique = await selfCritiquePrompting(fewShotResponse, context.persona);
 
   return results;

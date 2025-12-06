@@ -72,44 +72,47 @@ router.post('/test-techniques', async (req, res, next) => {
       
       switch (input.technique) {
         case 'fewShot':
-          result = { fewShot: await fewShotPrompting(input.query, input.persona) };
+          result = await fewShotPrompting(input.query, input.persona) ;
           break;
         case 'chainOfThought':
-          result = { chainOfThought: await chainOfThoughtPrompting(input.query, context) };
+          result =  await chainOfThoughtPrompting(input.query, context) ;
           break;
         case 'reAct':
-          result = { reAct: await reActPrompting(input.query, context.docs) };
+          result = await reActPrompting(input.query, context.docs) ;
           break;
         case 'selfConsistency':
-          result = { selfConsistency: await selfConsistencyPrompting(input.query, input.persona) };
+          result =  await selfConsistencyPrompting(input.query, input.persona) ;
           break;
         case 'selfCritique':
           const tempResponse = "Thank you for contacting us. I understand your concern.";
-          result = { selfCritique: await selfCritiquePrompting(tempResponse, input.persona) };
+          result =  await selfCritiquePrompting(tempResponse, input.persona) ;
           break;
         case 'reflective':
-          result = { reflective: await reflectivePrompting(input.query, context) };
+          result =  await reflectivePrompting(input.query, context) ;
           break;
         case 'treeOfThoughts':
-          result = { treeOfThoughts: await treeOfThoughtsPrompting(input.query, input.persona) };
+          result =  await treeOfThoughtsPrompting(input.query, input.persona) ;
           break;
         case 'promptChaining':
-          result = { promptChaining: await promptChaining(input.query, context) };
+          result =  await promptChaining(input.query, context) ;
           break;
       }
     }
-
+    console.log("result.botResponse:", result.botResponse);
+    console.log("result",result);
+    console.log("result.prompt:", result.prompt);
     return res.json({
       success: true,
       technique: input.technique,
       query: input.query,
       persona: input.persona,
-      results: result,
+      results: result.botResponse? result.botResponse : result,
       educationalNotes: {
         technique: input.technique,
         description: getTechniqueDescription(input.technique),
         useCase: getTechniqueUseCase(input.technique),
-        tips: getTechniqueTips(input.technique)
+        tips: getTechniqueTips(input.technique),
+        prompt: result.prompt? result.prompt : result
       }
     });
   } catch (error) {

@@ -23,6 +23,7 @@ interface TestResult {
     description: string;
     useCase: string;
     tips: string[];
+    prompt: string;
   };
 }
 
@@ -106,6 +107,7 @@ export function PromptEngineeringDemo() {
           <h4>Technique: {educationalNotes.technique}</h4>
           <p><strong>Description:</strong> {educationalNotes.description}</p>
           <p><strong>Use Case:</strong> {educationalNotes.useCase}</p>
+          <p><strong>Prompt to LLM:</strong> {educationalNotes.prompt}</p>
           <div>
             <strong>Tips:</strong>
             <ul>
@@ -118,14 +120,14 @@ export function PromptEngineeringDemo() {
         
         <div className="technique-results">
           <h4>Generated Responses:</h4>
-          {Object.entries(results).map(([technique, response]) => (
-            <div key={technique} className="result-item">
-              <h5>{technique.charAt(0).toUpperCase() + technique.slice(1)}:</h5>
+          {/* {Object.entries(results).map(([technique, response]) => ( */}
+            <div className="result-item">
+              {/* <h5>{technique.charAt(0).toUpperCase() + technique.slice(1)}:</h5> */}
               <div className="response-text">
-                {typeof response === 'string' ? response : JSON.stringify(response, null, 2)}
+                {results}
               </div>
             </div>
-          ))}
+          {/* ))} */}
         </div>
       </div>
     );
