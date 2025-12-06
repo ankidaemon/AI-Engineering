@@ -107,7 +107,7 @@ export function PromptEngineeringDemo() {
           <h4>Technique: {educationalNotes.technique}</h4>
           <p><strong>Description:</strong> {educationalNotes.description}</p>
           <p><strong>Use Case:</strong> {educationalNotes.useCase}</p>
-          <p><strong>Prompt to LLM:</strong> {educationalNotes.prompt}</p>
+          <p><strong>Prompt:</strong> {educationalNotes.prompt}</p>
           <div>
             <strong>Tips:</strong>
             <ul>

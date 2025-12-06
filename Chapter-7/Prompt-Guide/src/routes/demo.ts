@@ -112,7 +112,7 @@ router.post('/test-techniques', async (req, res, next) => {
         description: getTechniqueDescription(input.technique),
         useCase: getTechniqueUseCase(input.technique),
         tips: getTechniqueTips(input.technique),
-        prompt: result.prompt? result.prompt : result
+        prompt: result.prompt? result.prompt : null
       }
     });
   } catch (error) {
