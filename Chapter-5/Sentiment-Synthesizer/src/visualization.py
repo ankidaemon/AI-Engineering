@@ -172,12 +172,60 @@ class Visualizer:
         logger.info(f"✅ Saved: confidence_distribution.png")
     
     def _create_html_dashboard(self, synthesis: Dict[str, Any], classified: List[Dict[str, Any]]):
-        """Create interactive HTML dashboard"""
+        """Create interactive HTML dashboard with plotly charts"""
         summary = synthesis['summary']
         distribution = synthesis['distribution']
         topics = synthesis['topics']
         insights = synthesis['insights']
-        
+
+        # --- plotly: sentiment distribution pie chart (loads plotly.js from CDN) ---
+        sentiment_colors = {'positive': '#11998e', 'neutral': '#fa709a', 'negative': '#eb3349'}
+        labels = list(summary['sentiment_counts'].keys())
+        values = list(summary['sentiment_counts'].values())
+
+        pie_fig = go.Figure(data=[go.Pie(
+            labels=[l.capitalize() for l in labels],
+            values=values,
+            marker_colors=[sentiment_colors.get(l, '#667eea') for l in labels],
+            hole=0.35,
+            textinfo='label+percent',
+        )])
+        pie_fig.update_layout(
+            title='Sentiment Distribution',
+            margin=dict(l=10, r=10, t=50, b=10),
+            height=350,
+        )
+        pie_html = pie_fig.to_html(include_plotlyjs='cdn', full_html=False)
+
+        # --- plotly: grouped bar chart by source (reuses CDN already loaded) ---
+        sources = list(distribution.keys())
+        bar_fig = go.Figure()
+        for sentiment in ['positive', 'neutral', 'negative']:
+            bar_fig.add_trace(go.Bar(
+                name=sentiment.capitalize(),
+                x=sources,
+                y=[distribution[s]['counts'].get(sentiment, 0) for s in sources],
+                marker_color=sentiment_colors.get(sentiment, '#667eea'),
+            ))
+        bar_fig.update_layout(
+            title='Sentiment by Source',
+            barmode='group',
+            margin=dict(l=10, r=10, t=50, b=10),
+            height=350,
+        )
+        bar_html = bar_fig.to_html(include_plotlyjs=False, full_html=False)
+
+        # --- plotly: confidence histogram ---
+        confidences = [item['sentiment']['confidence'] for item in classified]
+        hist_fig = px.histogram(
+            x=confidences, nbins=20,
+            labels={'x': 'Confidence', 'y': 'Count'},
+            title='Prediction Confidence Distribution',
+            color_discrete_sequence=['#667eea'],
+        )
+        hist_fig.update_layout(margin=dict(l=10, r=10, t=50, b=10), height=300)
+        hist_html = hist_fig.to_html(include_plotlyjs=False, full_html=False)
+
         html_content = f"""
 <!DOCTYPE html>
 <html lang="en">
@@ -222,6 +270,17 @@ class Visualizer:
         .metric-card.positive {{ background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); }}
         .metric-card.neutral {{ background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); }}
         .metric-card.negative {{ background: linear-gradient(135deg, #eb3349 0%, #f45c43 100%); }}
+        .charts-grid {{
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 40px;
+        }}
+        .chart-card {{
+            border: 1px solid #eee;
+            border-radius: 8px;
+            padding: 10px;
+        }}
         .section {{ margin-bottom: 40px; }}
         .section h2 {{ color: #667eea; margin-bottom: 20px; border-bottom: 2px solid #667eea; padding-bottom: 10px; }}
         table {{
@@ -242,7 +301,7 @@ class Visualizer:
     <div class="container">
         <h1>🎯 Sentiment Synthesizer Dashboard</h1>
         <div class="timestamp">Generated: {summary['timestamp']}</div>
-        
+
         <div class="metrics-grid">
             <div class="metric-card positive">
                 <h3>Positive</h3>
@@ -265,13 +324,22 @@ class Visualizer:
                 <div>Avg Confidence: {summary['average_confidence']}</div>
             </div>
         </div>
-        
+
+        <div class="section">
+            <h2>📊 Interactive Charts</h2>
+            <div class="charts-grid">
+                <div class="chart-card">{pie_html}</div>
+                <div class="chart-card">{bar_html}</div>
+            </div>
+            <div class="chart-card">{hist_html}</div>
+        </div>
+
         <div class="section">
             <h2>📊 Overall Analysis</h2>
             <p><strong>Overall Sentiment:</strong> <span style="font-weight: bold; color: #667eea;">{summary['overall_sentiment']}</span></p>
             <p><strong>Average Confidence:</strong> {summary['average_confidence']}</p>
         </div>
-        
+
         <div class="section">
             <h2>📱 Distribution by Source</h2>
             <table>
@@ -281,7 +349,7 @@ class Visualizer:
                 </tbody>
             </table>
         </div>
-        
+
         <div class="section">
             <h2>🏷️ Top Topics</h2>
             <table>
@@ -291,14 +359,14 @@ class Visualizer:
                 </tbody>
             </table>
         </div>
-        
+
         <div class="section">
             <h2>💡 Key Insights</h2>
             <ul class="insights-list">
                 {''.join([f"<li>{insight}</li>" for insight in insights])}
             </ul>
         </div>
-        
+
         <div class="footer">
             <p>Generated by Sentiment Synthesizer | Powered by Transformers</p>
         </div>
@@ -306,11 +374,11 @@ class Visualizer:
 </body>
 </html>
         """
-        
+
         filepath = self.output_dir / "dashboard.html"
         with open(filepath, 'w') as f:
             f.write(html_content)
-        
+
         logger.info(f"✅ Saved: dashboard.html")
     
     def _create_csv_exports(self, synthesis: Dict[str, Any], classified: List[Dict[str, Any]]):

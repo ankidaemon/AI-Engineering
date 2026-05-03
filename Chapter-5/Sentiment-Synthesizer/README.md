@@ -44,23 +44,23 @@ Sentiment-Synthesizer/
 │   ├── embedding_generator.py      # Embedding generation
 │   ├── sentiment_classifier.py     # Sentiment classification
 │   ├── sentiment_synthesizer.py    # Trend synthesis & analysis
-│   ├── visualization.py            # Dashboard & charts
-│   ├── fine_tuning.py              # Model fine-tuning (optional)
+│   ├── visualization.py            # Dashboard & charts (matplotlib + plotly)
+│   ├── fine_tuning.py              # Model fine-tuning on labeled data
 │   └── utils/
 │       └── logger.py               # Logging utility
 │
 ├── data/
 │   ├── raw/                        # Raw collected data
-│   ├── processed/                  # Preprocessed data
-│   └── embeddings/                 # Generated embeddings
+│   └── processed/                  # Preprocessed data
 │
 ├── output/
+│   ├── embeddings/                 # Generated embeddings
 │   ├── visualizations/             # Generated charts & dashboard
 │   ├── synthesis/                  # Synthesis results
 │   └── classifications/            # Classification results
 │
-└── notebooks/
-    └── exploratory_analysis.ipynb  # Jupyter notebook for exploration
+└── models/
+    └── sentiment_model/            # Fine-tuned model (created after fine-tuning)
 ```
 
 ## 📦 Installation
@@ -291,8 +291,8 @@ config.USE_GPU = True  # Automatic CUDA detection
 import json
 from pathlib import Path
 
-# Load synthesis results
-result_file = Path("output/synthesis/sentiment_synthesis_*.json")
+# Load most recent synthesis results
+result_file = sorted(Path("output/synthesis").glob("sentiment_synthesis_*.json"))[-1]
 with open(result_file) as f:
     synthesis = json.load(f)
 
@@ -365,7 +365,7 @@ pip install --upgrade -r requirements.txt
 - Total pipeline: ~5-10s for 8 samples
 
 **Model Sizes:**
-- BERT-base: ~340MB
+- BERT-base: ~440MB
 - DistilBERT: ~260MB (faster, smaller)
 
 ## 📚 Learning Outcomes

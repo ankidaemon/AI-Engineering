@@ -76,6 +76,7 @@ class Config:
         (self.OUTPUT_DIR / "embeddings").mkdir(parents=True, exist_ok=True)
         (self.OUTPUT_DIR / "visualizations").mkdir(parents=True, exist_ok=True)
         (self.OUTPUT_DIR / "synthesis").mkdir(parents=True, exist_ok=True)
+        (self.OUTPUT_DIR / "classifications").mkdir(parents=True, exist_ok=True)
     
     def to_dict(self) -> Dict[str, Any]:
         """Convert config to dictionary"""

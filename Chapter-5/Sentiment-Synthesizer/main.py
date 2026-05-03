@@ -54,7 +54,7 @@ class SentimentSynthesizerPipeline:
             logger.info("🧠 Step 3: Embedding Generation")
             embedder = EmbeddingGenerator(self.config)
             embeddings = embedder.generate_embeddings(processed_data)
-            logger.info(f"✅ Generated embeddings with dimension {embeddings[0]['embedding'].shape[0]}\n")
+            logger.info(f"✅ Generated embeddings with dimension {len(embeddings[0]['embedding'])}\n")
             
             # Step 4: Sentiment Classification
             logger.info("🎯 Step 4: Sentiment Classification")
