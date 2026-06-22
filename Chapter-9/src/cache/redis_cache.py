@@ -28,7 +28,7 @@ class RedisCache:
 
     Role 3 — Rate Limiter
         Keys:   ratelimit:{ip}:{unix_minute_bucket}
-        TTL:    120s (2 minutes, covering the sliding window)
+        TTL:    120s (2 minutes, covering the current fixed window)
         Purpose: Per-IP request rate limiting to prevent inference budget
                  exhaustion from a single client.
 
@@ -147,7 +147,7 @@ class RedisCache:
         limit: int | None = None
     ) -> tuple[bool, int]:
         """
-        Sliding window rate limit using 1-minute buckets.
+        Fixed-window rate limit using 1-minute buckets.
         Returns (is_allowed, requests_remaining).
         Fails open: returns (True, limit) if Redis is unreachable.
         """

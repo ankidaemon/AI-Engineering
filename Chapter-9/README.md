@@ -97,43 +97,82 @@ API Response (answer, sources, session_id)
 - Docker (for Redis)
 - Pinecone account (or use ChromaDB-only mode)
 
-## Setup
+## Environment Setup
+
+### 1. Python environment and dependencies
 
 ```bash
-# 1. Create and activate a virtual environment
+# Python 3.11 or higher is required.
 python -m venv venv
-source venv/bin/activate   # Windows: venv\Scripts\activate
+source venv/bin/activate        # Windows: venv\Scripts\activate
 
-# 2. Install dependencies
+# All pinned dependencies live in requirements.txt (single source of truth).
 pip install -r requirements.txt
+```
 
-# 3. Configure environment
-cp .env.example .env
-# Edit .env — set PINECONE_API_KEY at minimum
+### 2. Ollama (runs Llama 3.1 locally)
 
-# 4. Start Redis
+```bash
+# Install Ollama
+#   macOS:   brew install ollama
+#   Linux:   curl -fsSL https://ollama.com/install.sh | sh
+#   Windows: download from https://ollama.com
+
+# Start the Ollama service (leave running in its own terminal)
+ollama serve
+
+# Pull the models (in a separate terminal)
+ollama pull llama3.1:8b      # ~4.7 GB — development (the default)
+ollama pull llama3.1:70b     # ~40 GB  — production quality (optional)
+```
+
+### 3. Redis (cache, sessions, rate limiting)
+
+Redis runs via Docker Compose. The bundled `docker-compose.yml` configures it with
+AOF persistence, a 1 GB `allkeys-lru` cap, and a healthcheck:
+
+```bash
 docker-compose up -d
+```
 
-# 5. Pull the language model
-ollama pull llama3.1:8b
+### 4. Configuration
+
+```bash
+cp .env.example .env
+# Edit .env — set PINECONE_API_KEY only if you want the cloud vector store.
+# With the defaults the system runs fully locally (ChromaDB + Ollama).
 ```
 
 ## Environment Variables
 
+All variables are read by `src/config.py` (Pydantic settings) and have working defaults;
+see `.env.example` for the complete file. `PINECONE_API_KEY` is the only one you must set,
+and only if you opt into the cloud vector store.
+
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `PINECONE_API_KEY` | _(required)_ | Pinecone API key |
+| `PINECONE_API_KEY` | _(required for cloud mode)_ | Pinecone API key; leave unset to run ChromaDB-only |
 | `PINECONE_ENVIRONMENT` | `us-east-1` | Pinecone region |
 | `PINECONE_INDEX_NAME` | `research-assistant` | Index name |
-| `OLLAMA_BASE_URL` | `http://localhost:11434` | Ollama server URL |
-| `LLAMA_MODEL` | `llama3.1:8b` | Model tag |
+| `CHROMA_PERSIST_DIRECTORY` | `./data/chroma_db` | Local ChromaDB persistence path |
+| `CHROMA_COLLECTION_NAME` | `research_papers` | Local ChromaDB collection |
 | `REDIS_URL` | `redis://localhost:6379` | Redis connection string |
 | `REDIS_CACHE_TTL` | `3600` | Query cache TTL (seconds) |
 | `REDIS_SESSION_TTL` | `86400` | Session TTL (seconds) |
+| `REDIS_RATE_LIMIT_RPM` | `60` | Requests per minute per IP |
 | `EMBEDDING_MODEL` | `sentence-transformers/all-mpnet-base-v2` | Embedding model |
-| `RETRIEVAL_TOP_K` | `12` | Candidates before reranking |
-| `RERANK_TOP_K` | `5` | Final chunks sent to model |
+| `EMBEDDING_DIMENSION` | `768` | Embedding vector dimension (must match the model) |
+| `LLAMA_MODEL` | `llama3.1:8b` | Model tag (`llama3.1:70b` for production) |
+| `LLAMA_TEMPERATURE` | `0.1` | Generation temperature |
+| `LLAMA_MAX_TOKENS` | `2048` | Max tokens per generated answer |
+| `OLLAMA_BASE_URL` | `http://localhost:11434` | Ollama server URL |
+| `RERANKER_MODEL` | `cross-encoder/ms-marco-MiniLM-L-6-v2` | Cross-encoder used for second-stage reranking |
+| `RETRIEVAL_TOP_K` | `12` | Candidates retrieved before reranking (first-stage recall pool) |
+| `RERANK_TOP_K` | `5` | Final chunks kept after reranking and sent to the model |
 | `HYBRID_ALPHA` | `0.7` | Dense vs sparse weight (1.0 = dense only) |
+| `CHUNK_SIZE` | `512` | Target tokens per chunk |
+| `CHUNK_OVERLAP_SENTENCES` | `2` | Sentence overlap between chunks |
+| `MIN_CHUNK_SIZE` | `100` | Discard chunks smaller than this |
 
 ## Ingesting Papers
 
@@ -190,11 +229,44 @@ Clears conversation history for a session.
 
 Flushes all cached query results.
 
+## Retrieval & Reranking (Two-Stage: Recall → Precision)
+
+Retrieval runs as a **two-stage funnel**, implemented in
+`src/retrieval/hybrid_retriever.py` and `src/retrieval/reranker.py`:
+
+1. **First stage — recall (cheap, wide).** Dense vector search (Pinecone/ChromaDB) and
+   sparse BM25 each return candidates, merged with Reciprocal Rank Fusion (RRF) and
+   deduplicated. RRF is a fusion of *ranks*, not a true relevance judgement, so this stage
+   optimises for *not missing* relevant chunks. It returns a wide pool of `RETRIEVAL_TOP_K`
+   (default **12**) candidates.
+2. **Second stage — precision (expensive, narrow).** A **cross-encoder** (`RERANKER_MODEL`,
+   default `cross-encoder/ms-marco-MiniLM-L-6-v2`) re-scores each `(query, chunk)` pair in a
+   single forward pass — far more accurate than comparing independently-computed vectors,
+   but it cannot be precomputed, so it only runs over the small first-stage pool. It keeps
+   the top `RERANK_TOP_K` (default **5**) chunks to send to the model. Each surviving chunk
+   gains a `rerank_score`.
+
+**Why both stages.** The bi-encoder embeddings used for first-stage search are fast and
+indexable but coarse; the cross-encoder is precise but too slow to run over the whole
+corpus. Running recall first and precision second gives you most of the cross-encoder's
+quality at a fraction of its cost. In practice this single addition tends to produce the
+largest measurable jump in answer quality of any component in the pipeline.
+
+**Tuning and toggling.**
+- Keep the recall pool modest (20–50) and the final set small (3–8): a cross-encoder adds
+  latency proportional to `RETRIEVAL_TOP_K` (reranking 30 candidates ≈ 30 short forward passes).
+- For higher quality at greater cost, set `RERANKER_MODEL=BAAI/bge-reranker-large`.
+- Reranking can be disabled by constructing the engine with `use_reranker=False`
+  (see `src/rag_engine.py`); the pipeline then falls back to RRF order.
+
 ## Running Tests
 
 ```bash
 pytest tests/ -v
 ```
+
+Reranking behaviour is covered by `tests/test_reranker.py` (ordering, truncation to
+`top_k`, pair construction, and the empty-candidates case).
 
 ## Configuration Defaults (Chunking & Retrieval)
 
