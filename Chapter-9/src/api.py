@@ -1,3 +1,17 @@
+"""
+FastAPI application — the serving layer (RAG stage 7).
+
+Exposes the system over HTTP and applies per-IP rate limiting (60 req/min).
+Endpoints:
+    POST   /query                 Ask a question; returns answer + sources + session_id
+    GET    /health                Readiness of Ollama and Redis
+    DELETE /session/{session_id}  Clear a conversation's history
+    POST   /cache/invalidate      Flush all cached query results
+
+Note: paper ingestion is NOT an endpoint — it is a CLI batch job in
+scripts/ingest_papers.py, kept out of the request path on purpose.
+See the project README for the full endpoint reference.
+"""
 import uuid
 import logging
 from contextlib import asynccontextmanager

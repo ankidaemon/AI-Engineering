@@ -29,6 +29,9 @@ class Settings(BaseSettings):
     embedding_model: str = "sentence-transformers/all-mpnet-base-v2"
     embedding_dimension: int = 768
 
+    # Reranking (cross-encoder second stage)
+    reranker_model: str = "cross-encoder/ms-marco-MiniLM-L-6-v2"
+
     # Retrieval
     retrieval_top_k: int = 12         # candidates before reranking
     rerank_top_k: int = 5             # final chunks sent to model

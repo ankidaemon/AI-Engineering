@@ -1,3 +1,12 @@
+"""
+Hybrid retrieval (RAG stage 4) — combines dense and sparse search.
+
+Runs dense vector search (Pinecone, or ChromaDB as a local fallback) alongside
+sparse BM25 keyword search, merges the two ranked lists with Reciprocal Rank
+Fusion (RRF), and deduplicates. The HYBRID_ALPHA setting weights dense vs.
+sparse. Results are handed to the cross-encoder reranker (see reranker.py)
+before generation. See the project README ("What You'll Build & Learn").
+"""
 import logging
 from src.retrieval.pinecone_store import PineconeVectorStore
 from src.retrieval.chroma_store import ChromaVectorStore
@@ -68,9 +77,12 @@ class HybridRetriever:
         # Sparse retrieval
         sparse = self._bm25.query(query_text=query, top_k=k)
 
-        # Merge with RRF
+        # Merge with RRF. Return the wider candidate pool (retrieval_top_k),
+        # not the final rerank_top_k — the cross-encoder reranker downstream
+        # needs enough candidates to have a real choice. When reranking is
+        # disabled, the RAG engine trims this pool by RRF order instead.
         merged = self._rrf_merge(dense, sparse)
-        return merged[:settings.rerank_top_k]
+        return merged[:settings.retrieval_top_k]
 
     def _rrf_merge(
         self,

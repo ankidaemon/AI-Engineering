@@ -1,8 +1,22 @@
+"""
+RAG pipeline orchestration — the heart of the Research Assistant.
+
+Ties every stage together into the request/response flow:
+
+    rate-limit -> cache lookup -> query expansion -> hybrid retrieval
+    -> dedup + rerank -> session-history injection -> generation
+    -> cache + session update
+
+Owns RAG stages 5 (query understanding / expansion) and 6 (generation), and
+calls into the retrieval (stage 4), cache, and generation modules. See the
+project README ("What You'll Build & Learn") for how each stage maps to a file.
+"""
 import re
 import logging
 import asyncio
 from dataclasses import dataclass
 from src.retrieval.hybrid_retriever import HybridRetriever
+from src.retrieval.reranker import CrossEncoderReranker
 from src.cache.redis_cache import RedisCache
 from src.generation.llama_client import LlamaClient
 from src.generation.prompt_builder import (
@@ -26,16 +40,19 @@ class RAGResponse:
 
 class RAGEngine:
     """
-    Orchestrates the full RAG pipeline in eight steps:
+    Orchestrates the full RAG pipeline in nine steps:
 
     1.  Rate limit check (via Redis)
     2.  Cache lookup — return immediately on hit
     3.  Query expansion — generate alternative phrasings (Llama 3.1)
     4.  Hybrid retrieval — run all query variants through dense + sparse retrieval
-    5.  Deduplication + ranking — merge and deduplicate by chunk_id
-    6.  Token budget check — ensure retrieved context fits the context window
-    7.  Generation — build prompt, call Llama 3.1, receive answer
-    8.  Persistence — cache result, update session history
+    5.  Deduplication — merge candidates and deduplicate by chunk_id
+    6.  Reranking — cross-encoder re-scores the candidate pool by relevance
+        (recall → precision; the "needle" stage of Section 1.9). Falls back to
+        RRF order when reranking is disabled.
+    7.  Token budget check — ensure retrieved context fits the context window
+    8.  Generation — build prompt, call Llama 3.1, receive answer
+    9.  Persistence — cache result, update session history
     """
 
     # Llama 3.1 has 128K tokens. We reserve a budget for each component.
@@ -57,12 +74,16 @@ class RAGEngine:
     def __init__(
         self,
         use_pinecone: bool = True,
-        use_query_expansion: bool = True
+        use_query_expansion: bool = True,
+        use_reranker: bool = True
     ):
         self._retriever  = HybridRetriever(use_pinecone=use_pinecone)
         self._cache      = RedisCache()
         self._llama      = LlamaClient()
         self._expand     = use_query_expansion
+        # Construct the cross-encoder once and reuse it across requests; loading
+        # the model is expensive. None disables the second stage (RRF order only).
+        self._reranker   = CrossEncoderReranker() if use_reranker else None
 
     async def query(
         self,
@@ -107,30 +128,42 @@ class RAGEngine:
                 key = chunk.get("chunk_id") or chunk["content"][:64]
                 all_chunks.setdefault(key, chunk)
 
-        # Step 4: Sort by score and apply token budget
-        sorted_chunks = sorted(
-            all_chunks.values(),
-            key=lambda c: c.get("rrf_score", c.get("score", 0)),
-            reverse=True
-        )
-        budget_chunks = self._apply_token_budget(sorted_chunks)
+        # Step 4: Rerank the candidate pool (recall -> precision). The
+        # cross-encoder reads each (query, chunk) pair jointly, which RRF never
+        # does. When the reranker is disabled, fall back to RRF order.
+        candidates = list(all_chunks.values())
+        if self._reranker:
+            ranked_chunks = self._reranker.rerank(
+                query, candidates, top_k=settings.rerank_top_k
+            )
+        else:
+            ranked_chunks = sorted(
+                candidates,
+                key=lambda c: c.get("rrf_score", c.get("score", 0)),
+                reverse=True
+            )
 
-        # Step 5: Load session history (for multi-turn context)
+        # Step 5: Apply token budget to the reranked chunks
+        budget_chunks = self._apply_token_budget(ranked_chunks)
+
+        # Step 6: Load session history (for multi-turn context)
         session  = await self._cache.get_session(session_id)
         history  = self._cache.format_history_for_prompt(session)
 
-        # Step 6: Generate answer
+        # Step 7: Generate answer
         messages = build_rag_messages(query, budget_chunks, history)
         answer   = await self._llama.generate(messages)
 
-        # Step 7: Format sources for API response
+        # Step 8: Format sources for API response
         sources = [
             {
                 "title":     c.get("metadata", {}).get("title", ""),
                 "arxiv_id":  c.get("metadata", {}).get("arxiv_id", ""),
                 "published": c.get("metadata", {}).get("published", "")[:10],
                 "section":   c.get("metadata", {}).get("section", ""),
-                "score":     round(c.get("rrf_score", c.get("score", 0)), 4)
+                "score":     round(
+                    c.get("rerank_score", c.get("rrf_score", c.get("score", 0))), 4
+                )
             }
             for c in budget_chunks
         ]
@@ -144,7 +177,7 @@ class RAGEngine:
             session_id       = session_id
         )
 
-        # Step 8: Persist cache + session (run concurrently)
+        # Step 9: Persist cache + session (run concurrently)
         await asyncio.gather(
             self._cache.set_cached(query, {
                 "answer":           answer,

@@ -58,6 +58,7 @@ async def test_rag_query_returns_grounded_response(
     engine._cache     = mock_cache
     engine._llama     = mock_llama
     engine._expand    = False
+    engine._reranker  = None   # exercise the RRF-order fallback path
 
     result = await engine.query(
         query="What is the complexity of self-attention?",
@@ -84,6 +85,7 @@ async def test_cache_hit_bypasses_retrieval(mock_retriever, mock_cache, mock_lla
     engine._cache     = mock_cache
     engine._llama     = mock_llama
     engine._expand    = False
+    engine._reranker  = None   # exercise the RRF-order fallback path
 
     result = await engine.query(
         query="What is the complexity of self-attention?",
@@ -114,6 +116,7 @@ async def test_token_budget_caps_context(mock_retriever, mock_cache, mock_llama)
     engine._cache     = mock_cache
     engine._llama     = mock_llama
     engine._expand    = False
+    engine._reranker  = None   # exercise the RRF-order fallback path
 
     result = await engine.query(
         query="Test query",
