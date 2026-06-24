@@ -1,0 +1,26 @@
+# Core LangChain / LangGraph stack (pinned to the versions used in Chapter 10)
+langchain==0.3.0
+langchain-community==0.3.0
+langchain-core==0.3.0
+langgraph==0.2.0
+langgraph-checkpoint-sqlite==1.0.3   # SqliteSaver lives in its own package
+langchain-ollama==0.2.0
+langsmith==0.1.120
+
+# Vector store + embeddings (used by the optional vector-store memory strategy)
+chromadb==0.5.11
+sentence-transformers==3.2.0
+
+# Document handling, config, validation
+pypdf==4.3.1
+python-dotenv==1.0.1
+pydantic==2.9.2
+pydantic-settings==2.5.2
+
+# Serving
+fastapi==0.115.0
+uvicorn[standard]==0.30.6
+httpx==0.27.2
+
+# Testing
+pytest==8.3.3

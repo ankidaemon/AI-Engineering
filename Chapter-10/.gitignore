@@ -1,0 +1,20 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+venv/
+.venv/
+
+# Environment / secrets
+.env
+
+# Data: checkpoints, vector stores, generated reports
+data/*.db
+data/*.db-shm
+data/*.db-wal
+data/chroma_memory/
+!data/.gitkeep
+
+# OS
+.DS_Store
