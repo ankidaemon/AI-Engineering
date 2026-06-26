@@ -1,0 +1,18 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+venv/
+.venv/
+
+# Environment / secrets
+.env
+
+# Data: FAISS index, uploaded documents
+data/faiss_index/
+data/uploads/
+!data/.gitkeep
+
+# OS
+.DS_Store
