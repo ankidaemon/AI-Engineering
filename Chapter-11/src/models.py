@@ -33,7 +33,7 @@ def get_quality_model(temperature: float = 0.1) -> ChatOllama:
 
 
 def get_embeddings() -> OllamaEmbeddings:
-    """Embedding model used by FAISS / Pinecone and the HyDE retriever."""
+    """Embedding model used by FAISS / Chroma and the HyDE retriever."""
     return OllamaEmbeddings(
         model=settings.embedding_model,
         base_url=settings.ollama_base_url,

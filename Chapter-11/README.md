@@ -51,7 +51,7 @@ production.
 | Robust loading: pypdf → pdfminer → OCR fallback (§III) | `src/loaders/advanced_document_loader.py` |
 | FAISS local vector store (§4.1) | `src/vectorstores/faiss_store.py` |
 | Thread-safe FAISS writes (Failure 2) | `src/vectorstores/concurrent_faiss.py` |
-| Pinecone managed store + namespaces (§4.2) | `src/vectorstores/pinecone_store.py` |
+| Chroma local vector database + collections (§4.2) | `src/vectorstores/chroma_store.py` |
 | Four retrieval strategies (§4.3) | `src/retrieval/` |
 | Supervisor multi-agent system + hard iteration cap (§V) | `src/agents/supervisor_agent.py` |
 | Parallel specialist execution (§5.2) | `src/agents/parallel_agents.py` |
@@ -122,7 +122,7 @@ Chapter-11/
 │   ├── vectorstores/
 │   │   ├── faiss_store.py         # FAISS wrapper (injectable embeddings)
 │   │   ├── concurrent_faiss.py    # thread-safe write wrapper (Failure 2)
-│   │   └── pinecone_store.py      # optional managed store + namespaces
+│   │   └── chroma_store.py        # local persistent DB + collections (Section 4.2)
 │   ├── retrieval/
 │   │   ├── multi_query.py         # multi-query + filter_irrelevant_results (Failure 3)
 │   │   ├── self_querying.py       # natural language → metadata filter
@@ -185,10 +185,12 @@ cp .env.example .env              # every value already has a default
 | `OLLAMA_BASE_URL` | `http://localhost:11434` | Ollama server URL |
 | `FAST_MODEL` | `llama3.1:8b` | Classification, tool selection, query expansion |
 | `QUALITY_MODEL` | `llama3.1:70b` | Analysis, synthesis, reflection |
-| `EMBEDDING_MODEL` | `nomic-embed-text` | Embeddings for FAISS / Pinecone / HyDE |
+| `EMBEDDING_MODEL` | `nomic-embed-text` | Embeddings for FAISS / Chroma / HyDE |
 | `FAISS_PERSIST_DIR` | `./data/faiss_index` | Where the FAISS index is stored |
 | `FAISS_INDEX_TYPE` | `Flat` | `Flat` (dev) → `IVFFlat` / `HNSW` at scale |
-| `USE_PINECONE` | `false` | Use Pinecone instead of/along with FAISS |
+| `USE_CHROMA` | `false` | Use the local Chroma database instead of FAISS |
+| `CHROMA_PERSIST_DIR` | `./data/chroma` | Where the Chroma database is stored |
+| `CHROMA_COLLECTION` | `documents` | Default Chroma collection name |
 | `RETRIEVAL_K` | `8` | Passages retrieved per search |
 | `USE_MULTI_QUERY` | `true` | Expand queries into equivalent rephrasings |
 | `USE_HYDE` | `false` | HyDE retrieval (disable for existence queries) |
@@ -309,6 +311,6 @@ The book's snippets are trimmed for readability; this repository is the full,
 runnable implementation. It uses **native Pydantic v2** (`from pydantic import
 BaseModel`) rather than the deprecated `langchain_core.pydantic_v1` shim, uses
 **timezone-aware timestamps** (`datetime.now(timezone.utc)`), and makes a few
-interfaces injectable (notably the FAISS embeddings) so the test suite can run
-without a model server. Optional dependencies — Pinecone, pdfminer, OCR — are
+interfaces injectable (notably the FAISS and Chroma embeddings) so the test suite
+can run without a model server. Optional dependencies — pdfminer, OCR — are
 imported lazily, so the core installs and runs without them.

@@ -8,8 +8,10 @@ langchain-text-splitters==0.3.11
 langgraph==0.2.76
 langchain-ollama==0.2.3
 
-# Local vector search
+# Vector stores
 faiss-cpu==1.14.3         # use faiss-gpu on an NVIDIA host for acceleration
+langchain-chroma==0.1.4   # local, persistent vector database (Section 4.2)
+chromadb==0.5.11          # Chroma engine (pulled in by langchain-chroma; pinned here)
 
 # Document loading
 pypdf==5.9.0
@@ -32,10 +34,6 @@ python-multipart==0.0.32   # required by FastAPI for file uploads / form fields
 pytest==8.4.2
 
 # ── Optional extras (uncomment as needed) ────────────────────────────────
-# Cloud-scale vector search (Section 4.2):
-# langchain-pinecone>=0.2
-# pinecone-client>=5
-#
 # Better PDF layout handling + OCR fallback (Section III):
 # pdfminer.six>=20240706
 # pytesseract>=0.3.10        # also install the Tesseract binary on your system

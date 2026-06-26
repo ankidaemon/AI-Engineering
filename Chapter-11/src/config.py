@@ -31,10 +31,10 @@ class Settings(BaseSettings):
     faiss_persist_dir: str = "./data/faiss_index"
     faiss_index_type:  str = "Flat"          # Flat | IVFFlat | HNSW
 
-    # ── Pinecone (optional cloud vector store) ────────────────────────
-    use_pinecone:     bool = False
-    pinecone_api_key: str = ""
-    pinecone_index:   str = "dynamic-doc-reader"
+    # ── Chroma (local, persistent vector database) ────────────────────
+    use_chroma:         bool = False         # opt-in alternative to FAISS
+    chroma_persist_dir: str  = "./data/chroma"
+    chroma_collection:  str  = "documents"
 
     # ── Retrieval ─────────────────────────────────────────────────────
     retrieval_k:           int   = 8
