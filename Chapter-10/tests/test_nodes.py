@@ -33,8 +33,12 @@ def test_ingest_rejects_empty_document():
 
 
 def test_ingest_normalizes_and_counts():
-    result = ingest_document(make_state(document_text="word  word\n\n\n\nword"))
-    assert "\n\n\n" not in result["document_text"]
+    # Long enough to clear the 50-char minimum, with collapsible whitespace.
+    messy = ("Section one  has  content.\n\n\n\n"
+             "Section two follows with more text to analyze.")
+    result = ingest_document(make_state(document_text=messy))
+    assert "\n\n\n" not in result["document_text"]   # blank-line runs collapsed
+    assert "  " not in result["document_text"]        # double spaces collapsed
     assert result["errors"] == []
     assert result["current_step"] == "ingest_document"
 

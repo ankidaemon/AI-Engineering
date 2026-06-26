@@ -1,26 +1,32 @@
-# Core LangChain / LangGraph stack (pinned to the versions used in Chapter 10)
-langchain==0.3.0
-langchain-community==0.3.0
-langchain-core==0.3.0
-langgraph==0.2.0
-langgraph-checkpoint-sqlite==1.0.3   # SqliteSaver lives in its own package
-langchain-ollama==0.2.0
-langsmith==0.1.120
-
-# Vector store + embeddings (used by the optional vector-store memory strategy)
-chromadb==0.5.11
-sentence-transformers==3.2.0
+# Core LangChain / LangGraph stack (a tested, mutually-compatible set).
+# Note: langgraph 0.2.76+ is required for langchain-core 0.3.x — the older
+# langgraph 0.2.0 pins langchain-core <0.3 and will not resolve. The SQLite
+# checkpointer moved to langgraph-checkpoint-sqlite 2.x to match.
+langchain==0.3.30
+langchain-community==0.3.31
+langchain-core==0.3.86
+langgraph==0.2.76
+langgraph-checkpoint-sqlite==2.0.11   # SqliteSaver lives in its own package
+langchain-ollama==0.2.3
+langsmith==0.3.45
 
 # Document handling, config, validation
-pypdf==4.3.1
-python-dotenv==1.0.1
-pydantic==2.9.2
-pydantic-settings==2.5.2
+pypdf==5.9.0
+python-dotenv==1.2.2
+pydantic==2.13.4
+pydantic-settings==2.14.2
 
 # Serving
-fastapi==0.115.0
+fastapi==0.115.14
 uvicorn[standard]==0.30.6
 httpx==0.27.2
 
 # Testing
-pytest==8.3.3
+pytest==8.4.2
+
+# ── Optional: vector-store memory strategy ───────────────────────────────
+# Only needed if you use build_vector_store_memory() in
+# src/memory/conversation_memory.py (imported lazily, so the app and the test
+# suite run without these heavyweight packages installed).
+# chromadb==0.5.11
+# sentence-transformers==3.2.0
