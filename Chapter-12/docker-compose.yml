@@ -1,0 +1,44 @@
+services:
+  # One Postgres for everything that has to survive a restart: the brief vectors
+  # (pgvector), the LangGraph checkpoints, and the conversation ownership table.
+  # The pgvector image is stock Postgres with the `vector` extension available.
+  postgres:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_USER: intel
+      POSTGRES_PASSWORD: intel
+      POSTGRES_DB: intel
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  # Ollama serves the local models.
+  ollama:
+    image: ollama/ollama:latest
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+
+  app:
+    build: .
+    depends_on:
+      - postgres
+      - ollama
+    environment:
+      OLLAMA_BASE_URL: http://ollama:11434
+      CHECKPOINTER: postgres
+      VECTOR_STORE: pgvector
+      CONVERSATION_STORE: postgres
+      POSTGRES_URL: postgresql://intel:intel@postgres:5432/intel
+      LANGSMITH_TRACING: "false"
+      # One key per customer. Replace before this is reachable from anywhere.
+      API_KEYS: "dev-key-acme:acme,dev-key-globex:globex"
+    ports:
+      - "8095:8095"
+    command: uvicorn src.api:app --host 0.0.0.0 --port 8095
+
+volumes:
+  postgres_data:
+  ollama_data:

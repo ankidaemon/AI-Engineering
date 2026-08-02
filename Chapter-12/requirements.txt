@@ -1,0 +1,40 @@
+# Core LangChain / LangGraph stack (a tested, mutually-compatible set).
+langchain==0.3.30
+langchain-community==0.3.31
+langchain-core==0.3.86
+langchain-text-splitters==0.3.11
+langgraph==0.2.76
+langgraph-checkpoint-sqlite==2.0.11
+langchain-ollama==0.2.3
+
+# Observability
+langsmith==0.3.45
+
+# Vector store and persistence. One Postgres holds the vectors, the LangGraph
+# checkpoints and the conversation ownership table, so deleting a customer is
+# one transaction rather than three systems to reconcile.
+langchain-postgres==0.0.16
+langgraph-checkpoint-postgres==2.0.24
+psycopg[binary]==3.2.10
+pgvector==0.3.6
+
+# Web ingestion
+firecrawl-py==1.4.0
+
+# Cost estimation (token counting)
+tiktoken==0.8.0
+
+# Config, validation
+pydantic==2.13.4
+pydantic-settings==2.14.2
+python-dotenv==1.2.2
+
+# Serving
+fastapi==0.115.14
+uvicorn[standard]==0.30.6
+httpx==0.27.2
+
+# Testing
+pytest==8.4.2
+pytest-asyncio==0.24.0
+
