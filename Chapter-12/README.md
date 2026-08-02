@@ -78,11 +78,3 @@ Test defaults in `src/config.py` keep the suite offline, so `pytest` needs no
 | `tests/test_ingestion.py` | FireCrawl loader and per customer dedup, with fakes |
 | `tests/test_tenancy.py` | Auth, conversation ownership, and that no customer's vectors reach another |
 | `tests/test_monitor_graph.py` | The whole pipeline end to end with fake models |
-
-## Design notes
-
-Everything that touches an outside service (the model, LangSmith, FireCrawl, the
-database) takes that dependency as an injected argument. Production passes the
-real client; tests pass a fake. That is what makes the suite fully offline and
-what keeps the modules easy to reason about. See `chapter-12.md` for the full
-explanation of each piece.
