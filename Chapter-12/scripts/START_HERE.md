@@ -1,34 +1,8 @@
-# Chapter 12 — start the system and take LangSmith screenshots
+# Chapter 12 — start the system 
 
-One file, everything you need. The setup below is already done on this machine; you
-only need the "Start from cold" and "Take the screenshots" sections when you come back.
+One file, everything you need. 
 
 Run everything from the repo root:
-
-```bash
-cd /Users/ankitm/Music/git/AI-Engineering/Chapter-12
-```
-
----
-
-## What is already set up (no need to redo)
-
-- **Ollama** installed via Homebrew.
-- **Models pulled:** `llama3.1:8b` (fast) and `nomic-embed-text` (embeddings).
-  `llama3.1:70b` (quality) is **not** finished downloading (the pull was paused).
-- **`.env`** is created and filled in (gitignored, keys stay local):
-  - `LANGSMITH_API_KEY` set, `LANGSMITH_TRACING=true`,
-    `LANGSMITH_PROJECT=real-time-intelligence-monitor`
-  - `FIRECRAWL_API_KEY` set
-  - `QUALITY_MODEL=llama3.1:8b` (lighter, so it runs now; see "Higher quality" below)
-  - `API_KEYS=dev-key-acme:acme,dev-key-globex:globex` — **required**. With no
-    keys configured every request returns 401, on purpose: there is no anonymous
-    customer to fall back to.
-- **Python deps** installed in `.venv`. Offline tests pass (71).
-- The bug that crashed `generate_brief` on model output containing `{`/`}` is fixed,
-  with a regression test.
-
----
 
 ## Start from cold (3 steps)
 
@@ -62,8 +36,6 @@ echo "$API_KEYS"                              # -> dev-key-acme:acme,dev-key-glo
 Traces start flowing to LangSmith the moment the pipeline makes a model call.
 
 ---
-
-## Generate runs to screenshot
 
 ### A. Real scrape-driven runs through the API (the full front door)
 
@@ -147,19 +119,6 @@ curl -N -s -X POST localhost:8095/analyze/stream \
 brew services start ollama
 ```
 
----
-
-## Take the screenshots
-
-> **Already done (2026-07-30).** All eleven screenshots are captured in
-> `Chapter-12/screenshots/`, with a file-by-file caption table in
-> `Chapter-12/screenshots/README.md`. Read that README before writing captions: it records
-> three things the images do not show on their own (LangSmith reports $0 cost for local
-> Ollama models, tags exist only on the older seeded runs, and how the golden dataset was
-> built). The section below is what to repeat if you want fresher or better runs.
-
-Open https://smith.langchain.com, select project **real-time-intelligence-monitor**.
-Set the browser to light mode and a clean width. Capture these eight:
 
 | # | View (where) | Show | Chapter section |
 |---|---|---|---|
@@ -172,56 +131,10 @@ Set the browser to light mode and a clean width. Capture these eight:
 | 7 | Project > Monitor (charts) | trace volume, error rate, p50/p95 latency, token/cost trend | I.7 monitoring, alerts |
 | 8 | On a good run: Add to Dataset > `intel-monitor-golden`, then Datasets & Experiments | dataset examples promoted from real runs (inputs vs expected brief) | I.6 evaluation |
 
-### Concrete targets already in the project (checked 2026-07-30)
-
 The project holds 11 root runs. **Set the time filter to 7 days** — the default 1 day hides
 everything except the four runs from this morning, including both feedback runs.
 
-Base URL:
-`https://smith.langchain.com/o/d81e137c-5cb8-4dc3-9552-89482fbdeecc/projects/p/03be72dd-b6ac-4648-ad08-ef32ecabdca9`
 
-Append `?timeModel=%7B%22duration%22%3A%227d%22%7D&runview=runs` for the 7 day run table,
-and `&peek=<run-id>` to open a specific run.
-
-| Shot | Run to open | Why this one |
-|---|---|---|
-| 2, 3 | `019fb20c-009c-79e2-9068-aadcb0e50702` | today's real run, 4,667 tokens, full node tree |
-| 4 (tags/metadata) | `019f8e2b-e0a7-71b3-ac8c-dfabdabc2193` | has `topic:cyber` + `chapter-12` tags and `monitor_id` |
-| 5 (error) | `019fb213-39bb-7681-8dab-b54053aa433b` | today's Ollama-refused run; red child `ChatOllama` inside |
-| 6 (feedback) | `019f8e42-...b0be` (score 1.0) and `019f8e2b-e0a7-...` (score 0.0) | the only two runs carrying `user_score` |
-| 8 (dataset) | any good run | no dataset exists yet; create `intel-monitor-golden` via **Add to Dataset** |
-
-Runs created before 2026-07-30 12:48 are named `LangGraph` and carry no tags: `/analyze/stream`
-only started naming and tagging its runs when `run_config` was added to `src/api.py`. Anything
-you run from now on arrives as `intel::<topic>` with `chapter-12`, `topic:<slug>` and
-`customer:<id>` tags, and `conversation_id` / `customer_id` / `topic` / `content_url` metadata.
-Runs from 2026-07-30 carry the older `monitor_id` metadata key instead of `conversation_id`,
-so `05-tags-metadata.png` shows the earlier shape.
-
-Caption crib sheet:
-- 1: "Every request is recorded the moment tracing is on, no code changes."
-- 2: "One trace, fully expanded: relevance, retrieval, analysis, brief, storage."
-- 3: "Token counts come for free; the CostTracker turns them into a running cost."
-- 5: "A model call failed (red), but the run completed because the node fails open."
-- 6: "A user rating attached to the exact run it refers to."
-- 7: "Volume, error rate, latency percentiles, and cost — what the thresholds alert on."
-- 8: "A golden dataset grown from real production runs."
-
----
-
-## Higher quality briefs (optional, for the final screenshots)
-
-The 8B model works but its briefs are rough. For better output:
-
-```bash
-ollama pull llama3.1:70b          # resumes where the paused pull left off (~40 GB)
-```
-
-Then set `QUALITY_MODEL=llama3.1:70b` in `.env`, re-export
-(`set -a && source .env && set +a`), and restart the API. Inference is slower (tens of
-seconds per brief) but the briefs are much better.
-
----
 
 ## Stop everything
 
