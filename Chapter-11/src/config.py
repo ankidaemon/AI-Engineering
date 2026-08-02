@@ -36,6 +36,14 @@ class Settings(BaseSettings):
     chroma_persist_dir: str  = "./data/chroma"
     chroma_collection:  str  = "documents"
 
+    # ── Redis (shared persistence / metadata / concurrency for FAISS) ──
+    use_redis:             bool = False      # back FAISS with Redis (Section 4.3)
+    redis_url:             str  = "redis://localhost:6379/0"
+    redis_index_key:       str  = "faiss:index"        # serialized index lives here
+    redis_metadata_prefix: str  = "faiss:meta"         # inverted-index key prefix
+    redis_lock_key:        str  = "faiss:write-lock"   # distributed write lock
+    redis_lock_timeout:    int  = 30                   # seconds before a held lock expires
+
     # ── Retrieval ─────────────────────────────────────────────────────
     retrieval_k:           int   = 8
     use_multi_query:       bool  = True

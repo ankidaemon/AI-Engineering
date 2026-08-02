@@ -12,6 +12,7 @@ langchain-ollama==0.2.3
 faiss-cpu==1.14.3         # use faiss-gpu on an NVIDIA host for acceleration
 langchain-chroma==0.1.4   # local, persistent vector database (Section 4.2)
 chromadb==0.5.11          # Chroma engine (pulled in by langchain-chroma; pinned here)
+redis==5.0.8              # shared persistence / metadata / concurrency for FAISS (Section 4.3)
 
 # Document loading
 pypdf==5.9.0
@@ -32,6 +33,7 @@ python-multipart==0.0.32   # required by FastAPI for file uploads / form fields
 
 # Testing
 pytest==8.4.2
+fakeredis[lua]==2.23.3    # in-memory Redis for offline tests (lua extra: emulates the redis-py lock)
 
 # ── Optional extras (uncomment as needed) ────────────────────────────────
 # Better PDF layout handling + OCR fallback (Section III):

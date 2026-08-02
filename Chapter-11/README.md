@@ -52,9 +52,10 @@ production.
 | FAISS local vector store (§4.1) | `src/vectorstores/faiss_store.py` |
 | Thread-safe FAISS writes (Failure 2) | `src/vectorstores/concurrent_faiss.py` |
 | Chroma local vector database + collections (§4.2) | `src/vectorstores/chroma_store.py` |
-| Four retrieval strategies (§4.3) | `src/retrieval/` |
+| Redis-backed FAISS: persistence + metadata + concurrency (§4.3) | `src/vectorstores/redis_backed_faiss.py` |
+| Four retrieval strategies (§4.4) | `src/retrieval/` |
 | Supervisor multi-agent system + hard iteration cap (§V) | `src/agents/supervisor_agent.py` |
-| Parallel specialist execution (§5.2) | `src/agents/parallel_agents.py` |
+| Parallel specialist execution (§5.4) | `src/agents/parallel_agents.py` |
 | Ingestion pipeline (§6.4) and analysis orchestrator (§6.5) | `src/pipeline/` |
 | FastAPI serving (§6.6) | `src/api.py` |
 
@@ -122,7 +123,8 @@ Chapter-11/
 │   ├── vectorstores/
 │   │   ├── faiss_store.py         # FAISS wrapper (injectable embeddings)
 │   │   ├── concurrent_faiss.py    # thread-safe write wrapper (Failure 2)
-│   │   └── chroma_store.py        # local persistent DB + collections (Section 4.2)
+│   │   ├── chroma_store.py        # local persistent DB + collections (Section 4.2)
+│   │   └── redis_backed_faiss.py  # FAISS + Redis: persistence/metadata/concurrency (Section 4.3)
 │   ├── retrieval/
 │   │   ├── multi_query.py         # multi-query + filter_irrelevant_results (Failure 3)
 │   │   ├── self_querying.py       # natural language → metadata filter
@@ -137,7 +139,9 @@ Chapter-11/
 │   ├── test_loaders.py
 │   ├── test_agents.py             # the hard-cap routing logic
 │   ├── test_retrieval.py          # HyDE gate + multi-query filter
-│   └── test_faiss.py              # FAISS with deterministic fake embeddings
+│   ├── test_faiss.py              # FAISS with deterministic fake embeddings
+│   ├── test_chroma.py             # Chroma metadata filter + collection isolation
+│   └── test_redis_backed_faiss.py # Redis persistence/metadata/concurrency (fakeredis)
 ├── requirements.txt
 ├── Dockerfile
 ├── docker-compose.yml
@@ -191,6 +195,12 @@ cp .env.example .env              # every value already has a default
 | `USE_CHROMA` | `false` | Use the local Chroma database instead of FAISS |
 | `CHROMA_PERSIST_DIR` | `./data/chroma` | Where the Chroma database is stored |
 | `CHROMA_COLLECTION` | `documents` | Default Chroma collection name |
+| `USE_REDIS` | `false` | Back FAISS with Redis for persistence/metadata/concurrency (§4.3) |
+| `REDIS_URL` | `redis://localhost:6379/0` | Redis server URL (local or managed/enterprise) |
+| `REDIS_INDEX_KEY` | `faiss:index` | Redis key holding the serialized FAISS index |
+| `REDIS_METADATA_PREFIX` | `faiss:meta` | Key prefix for the metadata inverted index |
+| `REDIS_LOCK_KEY` | `faiss:write-lock` | Distributed write-lock key |
+| `REDIS_LOCK_TIMEOUT` | `30` | Seconds before a held write lock auto-expires |
 | `RETRIEVAL_K` | `8` | Passages retrieved per search |
 | `USE_MULTI_QUERY` | `true` | Expand queries into equivalent rephrasings |
 | `USE_HYDE` | `false` | HyDE retrieval (disable for existence queries) |
@@ -247,8 +257,15 @@ curl -X POST http://localhost:8090/documents/query \
 docker compose up -d ollama
 docker compose exec ollama ollama pull llama3.1:8b
 docker compose exec ollama ollama pull nomic-embed-text
+docker compose up -d redis        # only needed when USE_REDIS=true (§4.3)
 docker compose up app             # serves on http://localhost:8090
 ```
+
+> **Why Redis in the compose file?** In containers, a pod's filesystem is
+> ephemeral, so the on-disk FAISS index disappears when the pod restarts, and an
+> in-process lock can't coordinate writes across multiple pods. Set `USE_REDIS=true`
+> to keep the index and its write-lock in Redis instead — one container locally,
+> managed/enterprise Redis in higher environments. See §4.3.
 
 ---
 
@@ -271,6 +288,10 @@ the payoff of how the code is structured:
   relevance filter) are tested with fake models/embeddings.
 - **FAISS** is tested with deterministic *fake embeddings* injected into the store,
   so it needs only `faiss-cpu`, not a running embedding model.
+- **Redis-backed FAISS** injects both a fake embeddings object *and* an in-memory
+  `fakeredis` client, so the persistence, metadata-filter, and concurrent-write
+  tests run with no Redis server — including a test that proves a second instance
+  loads the index straight from Redis (the ephemeral-pod story).
 
 > The model-backed tools and the full agent loops require Ollama and are intended
 > to be exercised by running the service, not by the unit tests.
@@ -291,6 +312,16 @@ baked into the code:
 - **Serialized FAISS writes (Failure 2).** `ThreadSafeFAISSStore` puts a lock
   around writes (reads stay unlocked) to prevent the silent data loss of two
   concurrent `save_local` calls.
+- **Redis-backed FAISS for containers (Section 4.3).** `RedisBackedFAISSStore`
+  keeps FAISS as the vector engine but moves the three things FAISS leaves to you
+  into Redis: the **serialized index** lives in a Redis key (survives ephemeral
+  pods), **metadata** is an inverted index so filtering is a Redis set
+  intersection, and writes take a **distributed lock** that coordinates across
+  pods, not just threads. Writes follow *lock → reload → add → persist*, so two
+  pods writing at once never lose each other's documents — Failure 2 solved
+  cluster-wide, not just in one process. It scales unchanged from one local Redis
+  container to managed/enterprise Redis. (The in-process `ThreadSafeFAISSStore`
+  remains the right, dependency-free choice for a single-process deployment.)
 - **Constrained query expansion (Failure 3).** The multi-query prompt demands
   *equivalent rephrasings*, and `filter_irrelevant_results` drops any expansion
   result that drifts from the original query.

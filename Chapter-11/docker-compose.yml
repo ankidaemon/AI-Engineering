@@ -24,14 +24,29 @@ services:
     #           count: all
     #           capabilities: [gpu]
 
+  # Optional: shared persistence / metadata / concurrency for FAISS (Section 4.3).
+  # Stand it up when USE_REDIS=true. In a real cluster this is managed/enterprise
+  # Redis; locally one container is enough. Data persists in the redis_data volume.
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis_data:/data
+
   app:
     build: .
     depends_on:
       - ollama
+      - redis
     environment:
       OLLAMA_BASE_URL: http://ollama:11434
       FAISS_PERSIST_DIR: /app/data/faiss_index
       UPLOAD_DIR: /app/data/uploads
+      # Set USE_REDIS=true to back FAISS with Redis instead of the local filesystem.
+      USE_REDIS: "false"
+      REDIS_URL: redis://redis:6379/0
     ports:
       - "8090:8090"
     volumes:
@@ -40,3 +55,4 @@ services:
 
 volumes:
   ollama_models:
+  redis_data:
