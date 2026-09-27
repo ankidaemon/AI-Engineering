@@ -1,0 +1,6 @@
+fee_name,product,amount,effective_date
+late payment fee,cashback-card,25.00,2026-06-01
+late payment fee,travel-card,25.00,2026-06-01
+foreign transaction fee,cashback-card,2.5 percent,2026-06-01
+annual fee,travel-card,95.00,2026-06-01
+cheque book reissue fee,everyday-savings,3.00,2026-06-01

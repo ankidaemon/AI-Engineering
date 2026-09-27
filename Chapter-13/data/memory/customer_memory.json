@@ -1,0 +1,61 @@
+{
+  "docstore": {
+    "63a51a90-f3bf-4cfd-84e6-32542085d35b": {
+      "user_id": "demo",
+      "data": "User asked about the interest-free period on their travel card around September 13, 2026",
+      "text_lemmatized": "User asked about the interest-free period on their travel card around September 13, 2026",
+      "hash": "d959308ff0865cf8811a4bd76edef6ed",
+      "created_at": "2026-09-13T11:09:51.210341+00:00",
+      "updated_at": "2026-09-13T11:09:51.210341+00:00",
+      "attributed_to": "user"
+    },
+    "06811041-e7d0-4dec-8a19-a228182b1f76": {
+      "user_id": "demo",
+      "data": "Assistant recommended the Travel Rewards Credit Card for frequent flyers due to no foreign transaction fees and 2 miles per dollar spent",
+      "text_lemmatized": "Assistant recommended the Travel Rewards Credit Card for frequent flyers due to no foreign transaction fees and 2 miles per dollar spent",
+      "hash": "60167e02098e225e50e6c5fedb77378c",
+      "created_at": "2026-09-13T11:41:06.765625+00:00",
+      "updated_at": "2026-09-13T11:41:06.765625+00:00"
+    },
+    "ba4d9b65-9512-4cb5-8e31-620b68c05a78": {
+      "user_id": "demo",
+      "data": "The Travel Rewards Credit Card offers 45 days interest-free period, aligning with User's request around September 13, 2026",
+      "text_lemmatized": "The Travel Rewards Credit Card offers 45 days interest-free period, aligning with User's request around September 13, 2026",
+      "hash": "d219766ac492063e0f97cce95c81567a",
+      "created_at": "2026-09-13T11:41:06.765640+00:00",
+      "updated_at": "2026-09-13T11:41:06.765640+00:00"
+    },
+    "17fec255-d53f-4d64-8615-67439c5cf604": {
+      "user_id": "demo",
+      "data": "The Travel Rewards Credit Card offers a 45 days interest-free period around September 13, 2026",
+      "text_lemmatized": "The Travel Rewards Credit Card offers a 45 days interest-free period around September 13, 2026",
+      "hash": "bf5cf319996dff07dc53449020222b8b",
+      "created_at": "2026-09-13T12:00:42.514966+00:00",
+      "updated_at": "2026-09-13T12:00:42.514966+00:00"
+    },
+    "c8ba7cdb-9d65-48ca-b81d-40cf4be1aebb": {
+      "user_id": "demo",
+      "data": "User asked to block their card around September 13, 2026",
+      "text_lemmatized": "User asked to block their card around September 13, 2026",
+      "hash": "e08aee23155f04d482642130683f4806",
+      "created_at": "2026-09-13T12:00:45.463296+00:00",
+      "updated_at": "2026-09-13T12:00:45.463296+00:00"
+    },
+    "6423e3f5-3755-4e07-9ab0-a8e256faff21": {
+      "user_id": "demo",
+      "data": "Assistant confirmed the request to block User's card",
+      "text_lemmatized": "Assistant confirmed the request to block User's card",
+      "hash": "6b68c4e958ae2069e546b4b8b6b3773d",
+      "created_at": "2026-09-13T12:00:45.463311+00:00",
+      "updated_at": "2026-09-13T12:00:45.463311+00:00"
+    }
+  },
+  "index_to_id": {
+    "0": "63a51a90-f3bf-4cfd-84e6-32542085d35b",
+    "1": "06811041-e7d0-4dec-8a19-a228182b1f76",
+    "2": "ba4d9b65-9512-4cb5-8e31-620b68c05a78",
+    "3": "17fec255-d53f-4d64-8615-67439c5cf604",
+    "4": "c8ba7cdb-9d65-48ca-b81d-40cf4be1aebb",
+    "5": "6423e3f5-3755-4e07-9ab0-a8e256faff21"
+  }
+}

@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Banking Assistant</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <span class="mark" aria-hidden="true">₹</span>
+    <h1>Banking assistant</h1>
+  </div>
+  <div class="who">
+    <label for="customer">Customer</label>
+    <input id="customer" value="demo" autocomplete="off" spellcheck="false">
+  </div>
+  <div class="health" id="health" title="the /health endpoint">
+    <span class="dot" id="health-dot"></span><span id="health-text">checking</span>
+  </div>
+</header>
+
+<main id="transcript" aria-live="polite" aria-label="Conversation">
+  <div class="welcome">
+    <p>Three kinds of message reach the same box, and the router decides which
+       part of the system handles each one. Every reply below is labelled with
+       the one that answered.</p>
+    <div class="chips">
+      <button class="chip" data-say="what is the interest free period on the travel card?">
+        <span class="chip-kind">a question</span>
+        what is the interest free period on the travel card?
+      </button>
+      <button class="chip" data-say="which card is best for someone who flies a lot?">
+        <span class="chip-kind">advice</span>
+        which card is best for someone who flies a lot?
+      </button>
+      <button class="chip" data-say="I lost my card this morning, please block it">
+        <span class="chip-kind">an action</span>
+        I lost my card this morning, please block it
+      </button>
+    </div>
+  </div>
+</main>
+
+<form id="composer" autocomplete="off">
+  <input id="message" name="message"
+         placeholder="Ask a question, ask for advice, or ask for something to be done"
+         autocomplete="off" required>
+  <button id="send" type="submit">Send</button>
+</form>
+
+<script src="app.js"></script>
+</body>
+</html>

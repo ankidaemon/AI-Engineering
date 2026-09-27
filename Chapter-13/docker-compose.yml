@@ -1,0 +1,45 @@
+services:
+  # Redis plays two roles (Section VII): the message broker that carries jobs
+  # to the Celery workers, and the shared cache the chat service reads.
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+  # Ollama serves the local models.
+  ollama:
+    image: ollama/ollama:latest
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+
+  # The chat API. Only quick work runs here; slow work goes to the worker.
+  api:
+    build: .
+    depends_on:
+      - redis
+      - ollama
+    environment:
+      OLLAMA_BASE_URL: http://ollama:11434
+      REDIS_URL: redis://redis:6379/0
+    ports:
+      - "8100:8100"
+
+  # Celery workers pull ingestion, re-indexing, and memory-writing jobs off
+  # the Redis queue. Scale with: docker compose up --scale worker=4
+  worker:
+    build: .
+    command: celery -A src.workers.celery_app.app worker --loglevel=info
+    depends_on:
+      - redis
+      - ollama
+    environment:
+      OLLAMA_BASE_URL: http://ollama:11434
+      REDIS_URL: redis://redis:6379/0
+    volumes:
+      - memory_data:/app/data/memory   # Mem0's on-disk store (Section II)
+
+volumes:
+  ollama_data:
+  memory_data:

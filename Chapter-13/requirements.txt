@@ -1,0 +1,33 @@
+# Core LangChain stack (a tested, mutually-compatible set — same pins as Chapter-12).
+langchain==0.3.30
+langchain-community==0.3.31
+langchain-core==0.3.86
+langchain-text-splitters==0.3.11
+langchain-ollama==0.2.3
+
+# Vector store
+faiss-cpu==1.14.3
+
+# Background work: Celery workers, Redis as broker + cache (Section VII)
+celery==5.4.0
+redis==5.0.8
+
+# The banking tools exposed over the Model Context Protocol (Section I)
+mcp==1.9.4
+
+# Long-term memory (Section II). Imported lazily; the tests never load it.
+mem0ai==2.0.12
+
+# Config, validation
+pydantic==2.13.4
+pydantic-settings==2.14.2
+python-dotenv==1.2.2
+
+# Serving
+fastapi==0.115.14
+uvicorn[standard]==0.30.6
+httpx==0.28.1
+
+# Testing (offline: no model server, no broker, no network)
+pytest==8.4.2
+fakeredis[lua]==2.23.3

@@ -1,0 +1,20 @@
+[
+  {
+    "question": "What is the interest free period on the travel card?",
+    "answer": "Purchases on the Travel Rewards Credit Card carry an interest free period of up to 45 days when the previous statement was paid in full.",
+    "product": "travel-card",
+    "effective_date": "2026-04-01"
+  },
+  {
+    "question": "How do I report a lost or stolen card?",
+    "answer": "Tell the assistant to block the card, call the 24 hour helpline, or block it from the mobile app under Cards. A replacement is dispatched within five working days.",
+    "product": "general",
+    "effective_date": "2026-01-15"
+  },
+  {
+    "question": "How long does a cheque book take to arrive?",
+    "answer": "A cheque book ordered before 3 pm on a working day is dispatched the same day and usually arrives within four working days.",
+    "product": "general",
+    "effective_date": "2026-01-15"
+  }
+]
